@@ -1,0 +1,174 @@
+---
+title: 'Assignment 3: R Analysis of Videogame Completion Time'
+author: "Austin Pham"
+date: "2025-09-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# About Dataset
+
+This dataset features playtime statistics featuring from main story to main story plus side missions to completionist (100%) and features columns such as release_year, publisher, release_month, etc. Here is the link: https://www.kaggle.com/datasets/b4n4n4p0wer/how-long-to-beat-video-game-playtime-dataset?select=hltb_dataset.csv
+In this assignment, my hypothesis is that over time, video games will have longer playtimes over the years whether it be due to more players becoming immersed into the gameplay and they play the game for longer  or the games have become longer itself to complete. I examine with a scope from the first video games made in the 1970s to the latest video games of 2025. 
+
+
+```{r}
+library("ggplot2")
+library("dplyr")
+library ("tidyr")
+
+```
+
+## Question 1
+1.	Load your CSV dataset into R as instructed in previous assignment. 
+Select columns to plot together to visualize your data.
+Plot a graph out of any of the ones we reviewed in class. 
+Make sure axes, lines are annotated and it has a title. Briefly explain what your graph shows.
+Show the R code that resulted in the graph.,
+
+```{r}
+data <- read.csv("hltb_dataset_filtered.csv") 
+
+ggplot(data,aes(x=release_year, y = main_story)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Playtime Statistics of Videogames by Main Story Per Release Year", x = "Year", y = "Main Story Completion by Hours") + 
+  theme_minimal() 
+
+    
+```
+
+
+My graph shows the playtime of video games over the span of the videogames' lifetime.It shows the trend of video games becoming longer and longer.
+
+
+
+## Question 2 
+2.	Do a simple statistical calculation (e.g. mean, standard deviation, mode, median, etc.) with R that aligns with your hypothesis and plot/report results. Explain what the result means in terms of your question.
+
+```{r}
+data_summary <- data %>%
+  group_by(release_year) %>%
+  summarize(mean_playtime = mean(main_story, na.rm = TRUE))
+
+```
+
+
+
+
+
+```{r}
+# Plot mean per year
+ggplot(data_summary, aes(x = release_year, y = mean_playtime)) + 
+         geom_line(color = "blue", size = 1) + 
+         geom_point(color = "red", size = 2) + 
+         labs(title = "Mean Playtime per Year", 
+              x = "Release Year",
+              y = "Mean  Average Playtime (hours)") +
+          theme_minimal()
+       
+```
+
+The result means that on average, people could be playing more and more of the video game or that video games are becoming longer to complete.
+
+
+
+## Question 3 
+
+3.We will apply statistical tests to your dataset to gain insight in answering your questions. Start by first applying a correlation or regression analysis to detect a relationship. Display the results by graphing the same variables using a scatter plot. Explain how the relationship aligns with your questions.
+
+```{r}
+#Scatterplot and Regression Analysis 
+
+#Scatterplot (Part 1)
+ggplot(data_summary, aes(x = release_year, y = mean_playtime)) +
+  geom_point(color = "blue", size = 2) +    # scatter points
+  geom_smooth(method = "lm", se = TRUE, color = "red") +  # linear regression line
+  labs(title = "Regression Analysis: Release Year vs Mean Playtime",
+       x = "Release Year",
+       y = "Mean Average Playtime (hours)") +
+  theme_minimal()
+
+#Regression Analysis Model (Part 2)
+
+model <- lm(mean_playtime ~ release_year, data = data_summary)
+summary(model)
+```
+
+With an adjusted R-squared value of 0.7187, there is a positive correlation between time and video game length.
+
+
+## Question 4 
+
+4.	For the second statistical test, select a numerical column that you want to check. First, plot a histogram of it and discuss about its distribution. As you did with the above graph, make sure the histogram is properly annotated.,
+
+```{r}
+
+# Load dataset
+data <- read.csv("hltb_dataset_filtered.csv")
+
+# Convert main_story to numeric (in case it’s stored as text)
+data$main_story <- as.numeric(data$main_story)
+
+# Remove missing values
+dataset <- subset(data, !is.na(main_story))
+
+# Plot histogram with annotations
+hist(dataset$main_story,
+     main = "Distribution of Main Story Playtimes",
+     xlab = "Main Story Playtime (hours)",
+     ylab = "Number of Games",
+     col = "lightblue",
+     border = "black",
+     breaks = 30)   # adjust bin count if needed
+
+# Add mean line
+mu <- mean(dataset$main_story, na.rm = TRUE)
+abline(v = mu, col = "red", lwd = 2, lty = 2)
+
+# Add legend
+legend("topright", 
+       legend = paste0("Mean = ", round(mu, 1), " hours"),
+       col = "red", lwd = 2, lty = 2, bty = "n")
+
+
+
+
+```
+
+
+## Question 5 
+5.	Then, divide your dataset into two groups of rows based on another column that matters for your question and apply a test that we discussed in class (t-test, ANOVA, ...) to test for significant differences between the two groups. Make sure the test you selected is consistent with the distribution that you observed earlier. Show the code and briefly explain the results.,
+
+```{r}
+
+# Load dataset
+data <- read.csv("hltb_dataset_filtered.csv")
+
+# Make sure numeric
+data$main_story <- as.numeric(data$main_story)
+
+# Remove missing values
+dataset <- subset(data, !is.na(main_story) & !is.na(release_year))
+
+# Split into two samples
+sample1 <- subset(dataset, release_year >= 1985 & release_year < 2005)
+sample2 <- subset(dataset, release_year >= 2005 & release_year <= 2025)
+
+# Run two-sample t-test (unequal variance)
+t_test_result <- t.test(sample1$main_story, sample2$main_story, var.equal = FALSE)
+
+# Show result
+print(t_test_result)
+
+
+
+
+```
+
+
+With a very small p-value of 8.351e-09, it is certain that video games have gotten longer to complete as the years progress.
+
+
